@@ -1,0 +1,82 @@
+plugins {
+  id 'com.github.ben-manes.versions' version '0.13.0' // gradle dependencyUpdates
+  id 'pmd'
+}
+
+apply plugin: 'java'
+
+targetCompatibility = sourceCompatibility = JavaVersion.VERSION_1_8
+
+group = group
+
+jar {
+  version = version
+  baseName = baseName
+}
+
+repositories {
+  jcenter()
+  mavenCentral()
+}
+
+test {
+    doLast {
+        // copy all style and javascript files to get fancy report
+        def jbehave = "${classpath.find { it.name.contains('jbehave-core') }}"
+        def jbehaveStyle = "${classpath.find { it.name.contains('jbehave-navigator') }}"
+        copy {
+            from(zipTree(jbehave)) {
+                include "style/*"
+            }
+            into("build/jbehave/view")
+        }
+        copy {
+            from(zipTree(jbehaveStyle)) {
+                include "js/**/*"
+                include "style/**/*"
+                include "images/*"
+            }
+            into("build/jbehave/view")
+        }
+        copy {
+          from("target")
+          into("build")
+        }
+    }
+}
+
+ext {
+  jbehaveVersion = '4.8.1'
+  lombokVersion = '1.18.22'
+  springVersion = '5.0.1.RELEASE'
+}
+
+dependencies {
+  compileOnly "org.projectlombok:lombok:${lombokVersion}"
+  annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+
+  testCompileOnly "org.projectlombok:lombok:${lombokVersion}"
+  testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+
+  testImplementation "org.mockito:mockito-all:1.9.5"
+
+  testImplementation 'org.testng:testng:7.4.0'
+
+  implementation "org.springframework:spring-context:${springVersion}"
+  testImplementation "org.springframework:spring-test:${springVersion}"
+
+  testImplementation "org.jbehave:jbehave-core:${jbehaveVersion}"
+  testImplementation "org.jbehave:jbehave-navigator:${jbehaveVersion}"
+
+}
+
+// Configure PMD.
+pmd {
+    ignoreFailures = true
+    toolVersion = "6.23.0"                             // The version of PMD to use.
+    ruleSetFiles = files("config/pmd/pmd.xml")         // The location of the configuration file.
+    ruleSets = []                                      // Ignore the default rules. The ones this config
+                                                       // uses are set with the ruleSetFiles property.
+}
+
+defaultTasks "clean", "build"
